@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <!--Necessary header tags and bootstrap implementation-->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://getbootstrap.com/docs/5.3/assets/css/docs.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+        <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css">
+        <title>K-AI</title>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- <py-script src="problem.py"></py-script> -->
+        <!-- <script defer src="https://pyscript.net/latest/pyscript.js"></script> -->
+    </head>
+
+    <body>
+        <!--Navigation bar-->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark bg-gradient">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="index.html"><img src="newlogo.png" alt="K-AI" width="105" height="100"></a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </nav>
+
+        <!--Code for center text on main page-->
+
+        <main>
+            <div class="container-fluid w-75 p-3 align-middle">
+                <h3><strong> Say Hello to K-AI</strong></h3>
+                <!-- <br> <br> -->
+                <p>To start having a conversation with K-AI, click the button below to allow microphone access 
+                    <br> <br> When prompted, you may begin to speak and say whatever you like.
+                    <br> Have fun chatting with K-AI, if you have any questions, concerns or general feedback,
+                    <br> please don't hesistate to contact us on the contact page listed below
+                </p>
+                <br> <br>
+                
+            </div>
+            <script>          
+                    var my_div = document.createElement("DIV");
+                    var my_p = document.createElement("P");
+                    var my_btn = document.createElement("BUTTON");
+                    var t = document.createTextNode("Press to start talking with K-AI");
+                    
+                    my_btn.appendChild(t);
+                    my_btn.setAttribute('class','btn btn-primary col-sm-10');
+                    my_div.setAttribute('class', 'container-fluid w-75 p-3 align-middle col-sm-6 col-md-6 col-xs-6');
+                    //my_p.appendChild(my_btn);
+                    my_div.appendChild(my_btn);
+                    document.body.appendChild(my_div);
+                    
+                    var base64data = 0;
+                    var reader;
+                    var recorder, gumStream;
+                    var recordButton = my_btn;
+                    
+                    var handleSuccess = function(stream) {
+                      gumStream = stream;
+                      var options = {
+                        //bitsPerSecond: 8000, //chrome seems to ignore, always 48k
+                        mimeType : 'audio/webm;codecs=opus'
+                        //mimeType : 'audio/webm;codecs=pcm'
+                      };            
+                      //recorder = new MediaRecorder(stream, options);
+                      recorder = new MediaRecorder(stream);
+                      recorder.ondataavailable = function(e) {            
+                        var url = URL.createObjectURL(e.data);
+                        var preview = document.createElement('audio');
+                        preview.controls = true;
+                        preview.src = url;
+                        document.body.appendChild(preview);
+                    
+                        reader = new FileReader();
+                        reader.readAsDataURL(e.data); 
+                        reader.onloadend = function() {
+                          base64data = reader.result;
+                          //console.log("Inside FileReader:" + base64data);
+                        }
+                      };
+                      recorder.start();
+                    };
+                    
+                    recordButton.innerText = "Recording... you may now speak with K-AI";
+                    
+                    navigator.mediaDevices.getUserMedia({audio: true}).then(handleSuccess);
+                    
+                    
+                    function toggleRecording() {
+                      if (recorder && recorder.state == "recording") {
+                          recorder.stop();
+                          gumStream.getAudioTracks()[0].stop();
+                          recordButton.innerText = "Saving the recording... pease wait!"
+                      }
+                    }
+                    
+                    // https://stackoverflow.com/a/951057
+                    function sleep(ms) {
+                      return new Promise(resolve => setTimeout(resolve, ms));
+                    }
+                    
+                    var data = new Promise(resolve=>{
+                      //recordButton.addEventListener("click", toggleRecording);
+                      recordButton.onclick = ()=>{
+                        toggleRecording()
+                    
+                        sleep(2000).then(() => {
+                          // wait 2000ms for the data to be available...
+                          // ideally this should use something like await...
+                          //console.log("Inside data:" + base64data)
+                          resolve(base64data.toString())
+                    
+                        });
+                    
+                      }
+                    });
+                </script>
+                
+            <script>
+                function get_audio() {
+                    var fs = require('fs');
+                    var wav = require('wav');
+
+                    var audio, b, binary, data, err, output, process, q, r, riff, riff_chunk_size, sr;
+                    display(new HTML(AUDIO_HTML));
+                    data = eval_js("data");
+                    binary = b64decode(data.split(",")[1]);
+                    process = ffmpeg.input("pipe:0").output("pipe:1", {
+                        "format": "wav"
+                    }).run_async({
+                        "pipe_stdin": true,
+                        "pipe_stdout": true,
+                        "pipe_stderr": true,
+                        "quiet": true,
+                        "overwrite_output": true
+                    });
+                    [output, err] = process.communicate({
+                        "input": binary
+                    });
+                    riff_chunk_size = output.length - 8;
+                    q = riff_chunk_size;
+                    b = [];
+
+                    for (var i = 0, _pj_a = 4; i < _pj_a; i += 1) {
+                        [q, r] = divmod(q, 256);
+                        b.append(r);
+                    }
+
+                    riff = output.slice(0, 4) + bytes(b) + output.slice(8);
+                    //[sr, audio] = wav_read(new io.BytesIO(riff));
+                    //return [audio, sr];
+
+                    sr, audio = wav_read(io.BytesIO(riff));    //wav_read
+                    return audio, sr
+                }
+                audio, sr = get_audio();
+                scipy.io.wavfile.write("prompt_request.wav", sr, audio);
+
+                modelete = whisper.load_model('medium.en');
+                result = model.transcribe('prompt_request.wav');
+
+                prompt_request = result["text"]
+
+                os.environ['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'] = OPENAI_API_KEY //Key from OpenAI API website;
+
+                openai.api_key = os.getenv('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');
+
+                response = openai.Completion.create(
+                    model='text-davinci-003',
+                    prompt=prompt_request,
+                    temperature=.5,
+                    max_tokens=100,
+                    top_p=1,
+                    frequency_penalty=0,
+                    presence_penalty=0
+                );
+
+                openai.api_key = os.getenv('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');
+
+                response = openai.Completion.create(
+                        model='text-davinci-003',
+                        prompt='result',
+                        temperature=0.7,
+                        max_tokens=256,
+                        top_p=1,
+                        frequency_penalty=0,
+                        presence_penalty=0
+                    );
+                
+                prompt_response = response['choices'][0]['text'];
+
+                console.log(prompt_response);
+            </script>
+        </main>
+
+        <footer class="fixed-bottom">
+            <!--Footer nagivation  bar with social media links-->
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark bg-gradient">
+                <div class="container-fluid">    
+                    <ul class="nav navbar-nav">
+                        <li class="nav-item">
+                            <!-- <i class="bi bi-c-circle"> Knights of Anime</i> -->
+                            <a class="nav-link">&copy; Cerebro Inc.</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="about.html">About</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="contact.html">Contact</a>
+                        </li>
+                    </ul>
+                         
+                    <ul class="nav navbar-nav ms-auto"> 
+                        <li class="nav-item">
+                            <a href="#"><i class="bi bi-twitter"></i></a> 
+                            &ensp; &ensp;
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a href="#"><i class="bi bi-instagram"></i></a> 
+                        </li>
+                    </ul>
+                </div>
+            </nav>  
+        </footer>
+    </body>
+</html>
